@@ -14,9 +14,8 @@ import numpy as np
 import os
 import time
 
-from knn import (
-    KNNClassifier,
-    tune_hyperparameters,
+from knn import KNNClassifier, tune_hyperparameters
+from evaluation import (
     compute_all_metrics,
     print_metrics,
     confusion_matrix,
@@ -36,22 +35,27 @@ def main():
     print("\n>>> Step 1: Loading preprocessed data")
     X_train = np.load(os.path.join(SAVE_DIR, "X_train.npy"))
     y_train = np.load(os.path.join(SAVE_DIR, "y_train.npy"))
-    X_test  = np.load(os.path.join(SAVE_DIR, "X_test.npy"))
-    y_test  = np.load(os.path.join(SAVE_DIR, "y_test.npy"))
+    X_test = np.load(os.path.join(SAVE_DIR, "X_test.npy"))
+    y_test = np.load(os.path.join(SAVE_DIR, "y_test.npy"))
 
-    print(f"  X_train: {X_train.shape}  (fraud={np.sum(y_train==1)}, legit={np.sum(y_train==0)})")
-    print(f"  X_test:  {X_test.shape}  (fraud={np.sum(y_test==1)}, legit={np.sum(y_test==0)})")
+    print(
+        f"  X_train: {X_train.shape}  (fraud={np.sum(y_train==1)}, legit={np.sum(y_train==0)})"
+    )
+    print(
+        f"  X_test:  {X_test.shape}  (fraud={np.sum(y_test==1)}, legit={np.sum(y_test==0)})"
+    )
 
     # ─── 2. Hyperparameter tuning via 5-fold CV ──
     print("\n>>> Step 2: Hyperparameter tuning (5-fold stratified CV)")
     t0 = time.time()
 
     tuning_results = tune_hyperparameters(
-        X_train, y_train,
+        X_train,
+        y_train,
         k_values=[3, 5, 7, 11, 15],
-        weight_options=['uniform', 'distance'],
+        weight_options=["uniform", "distance"],
         n_folds=5,
-        scoring='f1',          # optimize for F1 (balances precision & recall)
+        scoring="f1",  # optimize for F1 (balances precision & recall)
         random_state=42,
         verbose=True,
     )
@@ -59,8 +63,8 @@ def main():
     tuning_time = time.time() - t0
     print(f"  Tuning completed in {tuning_time:.1f} seconds.")
 
-    best_k = tuning_results['best_k']
-    best_weights = tuning_results['best_weights']
+    best_k = tuning_results["best_k"]
+    best_weights = tuning_results["best_weights"]
 
     # ─── 3. Train final model with best hyperparameters ──
     print(f"\n>>> Step 3: Training final model (k={best_k}, weights={best_weights})")
@@ -78,7 +82,7 @@ def main():
     print_metrics(train_metrics, header="Training Set Metrics")
 
     cm_train = confusion_matrix(y_train, y_train_pred)
-    print(f"\n  Training Confusion Matrix:")
+    print("\n  Training Confusion Matrix:")
     print(f"    TN={cm_train[0,0]:5d}  FP={cm_train[0,1]:5d}")
     print(f"    FN={cm_train[1,0]:5d}  TP={cm_train[1,1]:5d}")
     print(f"  Training prediction time: {train_time:.2f}s")
@@ -94,17 +98,16 @@ def main():
     print_metrics(test_metrics, header="Test Set Metrics")
 
     cm_test = confusion_matrix(y_test, y_test_pred)
-    print(f"\n  Test Confusion Matrix:")
+    print("\n  Test Confusion Matrix:")
     print(f"    TN={cm_test[0,0]:5d}  FP={cm_test[0,1]:5d}")
     print(f"    FN={cm_test[1,0]:5d}  TP={cm_test[1,1]:5d}")
-    print(f"  Test prediction time: {test_time:.2f}s "
-          f"({X_test.shape[0]} samples)")
+    print(f"  Test prediction time: {test_time:.2f}s " f"({X_test.shape[0]} samples)")
 
     # ─── 6. Overfitting check ────────────────────
     print("\n>>> Step 6: Overfitting Analysis")
     print(f"  {'Metric':12s}  {'Train':>8s}  {'Test':>8s}  {'Gap':>8s}")
     print(f"  {'-'*40}")
-    for metric_name in ['precision', 'recall', 'f1', 'auc_roc']:
+    for metric_name in ["precision", "recall", "f1", "auc_roc"]:
         tr = train_metrics[metric_name]
         te = test_metrics[metric_name]
         gap = tr - te
@@ -125,31 +128,36 @@ def main():
 
     # Save tuning results summary
     tuning_summary = {
-        'best_k': best_k,
-        'best_weights': best_weights,
-        'best_cv_score': tuning_results['best_score'],
-        'test_metrics': test_metrics,
-        'train_metrics': train_metrics,
-        'confusion_matrix_test': cm_test,
+        "best_k": best_k,
+        "best_weights": best_weights,
+        "best_cv_score": tuning_results["best_score"],
+        "test_metrics": test_metrics,
+        "train_metrics": train_metrics,
+        "confusion_matrix_test": cm_test,
     }
-    np.save(os.path.join(SAVE_DIR, "knn_tuning_summary.npy"),
-            tuning_summary, allow_pickle=True)
+    np.save(
+        os.path.join(SAVE_DIR, "knn_tuning_summary.npy"),
+        tuning_summary,
+        allow_pickle=True,
+    )
 
     print(f"\n  All artifacts saved to {SAVE_DIR}/:")
-    print(f"    knn_X_train.npy        — stored training data (for prediction)")
-    print(f"    knn_y_train.npy        — stored training labels")
-    print(f"    knn_params.npy         — hyperparameters (k, weights)")
-    print(f"    knn_test_pred.npy      — test predictions")
-    print(f"    knn_test_proba.npy     — test probabilities")
-    print(f"    knn_roc_fpr/tpr.npy    — ROC curve data")
-    print(f"    knn_tuning_summary.npy — full results summary")
+    print("    knn_X_train.npy        — stored training data (for prediction)")
+    print("    knn_y_train.npy        — stored training labels")
+    print("    knn_params.npy         — hyperparameters (k, weights)")
+    print("    knn_test_pred.npy      — test predictions")
+    print("    knn_test_proba.npy     — test probabilities")
+    print("    knn_roc_fpr/tpr.npy    — ROC curve data")
+    print("    knn_tuning_summary.npy — full results summary")
 
     print(f"\n{'=' * 60}")
-    print(f"  KNN Pipeline Complete!")
+    print("  KNN Pipeline Complete!")
     print(f"  Best model: k={best_k}, weights={best_weights}")
-    print(f"  Test F1={test_metrics['f1']:.4f}  "
-          f"Recall={test_metrics['recall']:.4f}  "
-          f"AUC-ROC={test_metrics['auc_roc']:.4f}")
+    print(
+        f"  Test F1={test_metrics['f1']:.4f}  "
+        f"Recall={test_metrics['recall']:.4f}  "
+        f"AUC-ROC={test_metrics['auc_roc']:.4f}"
+    )
     print(f"{'=' * 60}\n")
 
 

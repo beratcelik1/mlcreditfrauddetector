@@ -1,74 +1,59 @@
-# Data Preprocessing — Usage Guide
-**Prepared by Yousen Xie (yx697)**
+# Credit Card Fraud Detector
 
----
+Machine learning pipeline for detecting fraudulent credit card transactions. Logistic Regression and K-Nearest Neighbors implemented from scratch using NumPy (no scikit-learn, no TensorFlow, no PyTorch).
 
-## What's in `saved_models/`
+Built for INFO 5368: Practical Applications in Machine Learning.
 
-| File | Shape | Description |
-|------|-------|-------------|
-| `X_train.npy` | (2364, 30) | Training features — **balanced** (1970 legit + 394 fraud) |
-| `y_train.npy` | (2364,) | Training labels |
-| `X_test.npy` | (56961, 30) | Test features — **original ratio** (reflects real world) |
-| `y_test.npy` | (56961,) | Test labels |
-| `scaler_mean.npy` | (2,) | Mean of [Time, Amount] — for normalizing new inputs |
-| `scaler_std.npy` | (2,) | Std  of [Time, Amount] — for normalizing new inputs |
+## Team
 
-Labels: `0` = legitimate, `1` = fraud
+Berat Celik, Zijing Wu, Yuxiang Jiang, Yousen Xie, Gabrielle Xiao, Binyao Zhao
 
----
+## Dataset
 
-## Feature Columns (order matters)
+[Kaggle Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) — 284,807 transactions, 492 fraud (0.17%), 28 PCA features + Time + Amount.
 
-```python
-FEATURE_COLS = ['V1','V2',...,'V28', 'Time', 'Amount']  # 30 features total
-```
-- `V1–V28` : PCA-transformed (already normalized by dataset provider)
-- `Time`, `Amount` : Z-score normalized by our pipeline
+Download and place at `data/creditcard.csv`.
 
----
-
-## How to Load the Data
-
-```python
-import numpy as np
-
-X_train = np.load('saved_models/X_train.npy')
-y_train = np.load('saved_models/y_train.npy')
-X_test  = np.load('saved_models/X_test.npy')
-y_test  = np.load('saved_models/y_test.npy')
-```
-
----
-
-## How to Normalize a New Input (for Streamlit prediction)
-
-```python
-import numpy as np
-
-scaler_mean = np.load('saved_models/scaler_mean.npy')  # [mean_Time, mean_Amount]
-scaler_std  = np.load('saved_models/scaler_std.npy')   # [std_Time,  std_Amount]
-
-# x is a raw input vector of shape (30,) in order [V1..V28, Time, Amount]
-x = x.copy()
-x[28] = (x[28] - scaler_mean[0]) / scaler_std[0]  # normalize Time
-x[29] = (x[29] - scaler_mean[1]) / scaler_std[1]  # normalize Amount
-```
-
----
-
-## How to Regenerate the Data
-
-If you need to change `undersample_ratio` or other parameters:
+## Setup
 
 ```bash
-python preprocessing.py
+pip install -r requirements.txt
 ```
 
-Key parameters in `build_pipeline()`:
+## Run the Pipeline
 
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| `undersample_ratio` | 5.0 | legit:fraud ratio in training set |
-| `test_size` | 0.2 | 80/20 split |
-| `random_state` | 42 | fixed seed for reproducibility |
+```bash
+# 1. Preprocess data (generates train/test splits in saved_models/)
+python preprocessing.py
+
+# 2. Train Logistic Regression
+python train_logistic.py
+
+# 3. Train KNN
+python train_knn.py
+
+# 4. Launch Streamlit app
+streamlit run app.py
+```
+
+## Project Structure
+
+| File | Description |
+|------|-------------|
+| `preprocessing.py` | Data loading, validation, normalization, undersampling, train/test split |
+| `train_logistic.py` | Logistic Regression from scratch with gradient descent, hyperparameter tuning |
+| `knn.py` | KNN classifier from scratch with vectorized distance computation |
+| `train_knn.py` | KNN training with 5-fold stratified cross-validation |
+| `evaluation.py` | Shared metrics: precision, recall, F1, AUC-ROC, confusion matrix |
+| `app.py` | Streamlit web application (4 pages) |
+
+## Results
+
+| Metric | Logistic Regression | KNN (k=5, distance) |
+|--------|-------------------|-------------------|
+| Precision | 0.378 | 0.339 |
+| Recall | 0.806 | 0.837 |
+| F1 | 0.515 | 0.482 |
+| AUC-ROC | 0.959 | 0.939 |
+
+Both models achieve recall above 0.80 on the imbalanced test set (56,961 samples, 98 fraud).

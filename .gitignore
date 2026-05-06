@@ -1,5 +1,5 @@
-data/creditcard.csv
-saved_models/*.npy
 __pycache__/
 *.pyc
 .idea/
+.DS_Store
+.ruff_cache/

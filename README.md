@@ -72,7 +72,7 @@ The app opens at `http://localhost:8501` with four pages:
 
 ## Deployed Application
 
-[Live demo on Streamlit Community Cloud](#) — link added after deployment.
+[Live demo on Streamlit Community Cloud](https://mlcreditfrauddetector-l9u532wpnnwcznbzeca2eo.streamlit.app/) — runs the deployed Logistic Regression model.
 
 ## Implementation Notes
 
